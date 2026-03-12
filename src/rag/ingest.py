@@ -2,7 +2,7 @@
 
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 EMBED_MODEL = "llama3"
 FAISS_INDEX_PATH = "./data/faiss_index"

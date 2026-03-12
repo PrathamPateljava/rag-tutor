@@ -2,8 +2,8 @@
 
 from langchain_ollama import OllamaLLM
 from langchain_community.vectorstores import FAISS
-from langchain.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
+from langchain_core.prompts import PromptTemplate
+from langchain_classic.chains import RetrievalQA
 
 OLLAMA_MODEL = "llama3"
 TOP_K = 4
@@ -50,4 +50,3 @@ def ask(chain: RetrievalQA, question: str) -> dict:
         for d in result.get("source_documents", [])
     ]
     return {"answer": result["result"], "sources": sources}
-
