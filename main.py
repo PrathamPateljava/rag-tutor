@@ -1,9 +1,5 @@
 """
 RAG Tutor — Main entry point.
-Usage:
-  python main.py ingest <pdf_path>
-  python main.py ask "Your question here"
-  python main.py demo
 """
 
 import sys
