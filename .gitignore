@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+
+# Data & indexes
+data/faiss_index/
+data/raw_pdfs/*.pdf
+*.pdf
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Env
+.env
+
+# OS
+.DS_Store
+Thumbs.db
