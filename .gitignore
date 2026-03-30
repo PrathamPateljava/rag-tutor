@@ -12,6 +12,7 @@ env/
 # Data & indexes
 data/faiss_index/
 data/raw_pdfs/*.pdf
+data/processed/*.pdf
 *.pdf
 
 # IDE

@@ -1,0 +1,30 @@
+[
+  {
+    "filename": "stats_foundations.pdf",
+    "processed_path": "./data/processed/stats_foundations.pdf",
+    "chunks": 16,
+    "size_mb": 0.01,
+    "ingested_at": "2026-03-30T17:49:27.228726"
+  },
+  {
+    "filename": "ml_fundamentals.pdf",
+    "processed_path": "./data/processed/ml_fundamentals.pdf",
+    "chunks": 19,
+    "size_mb": 0.01,
+    "ingested_at": "2026-03-30T17:49:27.233313"
+  },
+  {
+    "filename": "nlp_fundamentals.pdf",
+    "processed_path": "./data/processed/nlp_fundamentals.pdf",
+    "chunks": 19,
+    "size_mb": 0.01,
+    "ingested_at": "2026-03-30T17:49:27.238290"
+  },
+  {
+    "filename": "5_generative_models_4in1.pdf",
+    "processed_path": "./data/processed/5_generative_models_4in1.pdf",
+    "chunks": 64,
+    "size_mb": 4.83,
+    "ingested_at": "2026-03-30T17:49:27.376313"
+  }
+]
