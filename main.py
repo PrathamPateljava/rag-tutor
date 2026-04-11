@@ -3,7 +3,8 @@ RAG Tutor — Main entry point.
 Usage:
   python main.py ingest                Ingest new PDFs from data/raw_pdfs/
   python main.py ingest --rebuild      Wipe index and re-ingest all PDFs
-  python main.py ask "question"        Ask a question
+  python main.py ask "question"        Ask a single question
+  python main.py chat                  Interactive conversation mode
   python main.py list                  List ingested documents
   python main.py demo                  Run demo with dummy data
 """
@@ -15,7 +16,7 @@ import json
 from datetime import datetime
 
 from src.pdf_processing import parse_pdf
-from src.rag import ingest_chunks, load_vectorstore, build_rag_chain, ask
+from src.rag import ingest_chunks, load_vectorstore, build_rag_chain, ask, ConversationMemory
 from src.rag.ingest import append_to_vectorstore
 
 # ─────────────────────────────────────────────
@@ -240,7 +241,7 @@ def cmd_list():
 
 
 def cmd_ask(question: str):
-    """Ask a question."""
+    """Ask a single question."""
     if not os.path.exists(FAISS_INDEX_PATH):
         print("No documents ingested yet. Run: python main.py ingest")
         return
@@ -258,7 +259,60 @@ def cmd_ask(question: str):
         print("=" * 60)
         for i, s in enumerate(result["sources"], 1):
             print(f"\n  [{i}] {s['source']} — Page {s['page']} ({s['type']}) | Relevance: {s['relevance']}")
+        print()
 
+
+def cmd_chat():
+    """Interactive conversation mode with memory."""
+    if not os.path.exists(FAISS_INDEX_PATH):
+        print("No documents ingested yet. Run: python main.py ingest")
+        return
+
+    vs = load_vectorstore()
+    chain = build_rag_chain(vs)
+    memory = ConversationMemory(max_turns=5)
+
+    print("\n" + "=" * 60)
+    print("  Nova — AI Tutor (Conversation Mode)")
+    print("  Type your questions. Type 'quit' to exit.")
+    print("  Type 'clear' to reset conversation history.")
+    print("=" * 60 + "\n")
+
+    while True:
+        try:
+            question = input("You: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\n\nGoodbye!")
+            break
+
+        if not question:
+            continue
+
+        if question.lower() in ("quit", "exit", "q"):
+            print("\nGoodbye!")
+            break
+
+        if question.lower() == "clear":
+            memory.clear()
+            print("Nova: Conversation history cleared. Fresh start!\n")
+            continue
+
+        result = ask(chain, question, memory=memory)
+
+        if result["abstained"]:
+            print(f"\nNova: {result['answer']}\n")
+        else:
+            print(f"\nNova: {result['answer']}\n")
+
+            # Show sources compactly in chat mode
+            if result["sources"]:
+                sources_str = " | ".join(
+                    f"{s['source']} p.{s['page']}" for s in result["sources"]
+                )
+                print(f"  Sources: {sources_str}\n")
+
+            # Store in memory
+            memory.add(question, result["answer"])
 
 
 def cmd_demo():
@@ -294,6 +348,9 @@ def main():
             print("Provide a question: python main.py ask \"What is...\"")
             sys.exit(1)
         cmd_ask(sys.argv[2])
+
+    elif command == "chat":
+        cmd_chat()
 
     elif command == "list":
         cmd_list()

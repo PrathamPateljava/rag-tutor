@@ -12,7 +12,7 @@ MMR_FETCH_K = 10  # fetch more candidates, then pick diverse top-K
 
 
 TUTOR_PROMPT = PromptTemplate(
-    input_variables=["context", "question"],
+    input_variables=["context", "question", "chat_history"],
     template="""You are Nova, a friendly and patient AI tutor. Here is who you are:
 
 PERSONALITY:
@@ -28,6 +28,7 @@ RULES:
 3. Never guess or make up information. If you're unsure, say so.
 4. Do not reference the context directly (don't say "according to the context" or "the document says"). Teach as if you naturally know the material.
 5. If the question is completely unrelated to the course material, politely redirect the student back to their studies.
+6. Use the conversation history to understand follow-up questions. If the student refers to something discussed earlier, connect it naturally.
 
 TEACHING STYLE:
 - Start with a simple one-sentence answer
@@ -35,6 +36,9 @@ TEACHING STYLE:
 - Use a real-world analogy or example to make abstract concepts click
 - Break down formulas or technical terms step by step
 - End with a quick key takeaway the student can remember
+
+Previous conversation:
+{chat_history}
 
 Context from course materials:
 {context}
@@ -51,10 +55,15 @@ REFUSAL_MESSAGE = (
 )
 
 RELEVANCE_CHECK_PROMPT = PromptTemplate(
-    input_variables=["question", "context"],
+    input_variables=["question", "context", "chat_history"],
     template="""Determine if the following student question is genuinely about the same topic as the provided course material context.
 
 The question might use words that appear in the context but mean something completely different (e.g., "bias in hiring" vs "bias in machine learning", "train my dog" vs "train a model").
+
+The student may also be asking a follow-up question that refers to a previous topic. Use the conversation history to understand what they are referring to.
+
+Previous conversation:
+{chat_history}
 
 Course material context:
 {context}
@@ -71,22 +80,27 @@ def build_rag_chain(vectorstore: FAISS):
     return vectorstore, llm
 
 
-def ask(chain_tuple, question: str) -> dict:
+def ask(chain_tuple, question: str, memory=None) -> dict:
     """
     Ask a question with layered abstention:
       Layer 1: Check retrieval similarity scores — refuse if too low
-      Layer 2: Prompt enforcement — LLM constrained to context only
+      Layer 2: Relevance check — is the question about the course material?
+      Layer 3: Prompt enforcement — LLM constrained to context only
     """
     vectorstore, llm = chain_tuple
 
-    # Layer 1: Retrieve with scores and check relevance
-    docs_with_scores = vectorstore.similarity_search_with_score(question, k=TOP_K)
+    # Rewrite follow-up questions to be self-contained for better retrieval
+    search_query = question
+    if memory and memory.turn_count > 0:
+        search_query = memory.get_follow_up_query(question)
+
+    # Layer 1: Check similarity scores first (for threshold gating)
+    docs_with_scores = vectorstore.similarity_search_with_score(search_query, k=TOP_K)
 
     if not docs_with_scores:
         return {"answer": REFUSAL_MESSAGE, "sources": [], "abstained": True}
 
     # FAISS returns L2 distance (lower = more similar)
-    # Convert to similarity: similarity = 1 / (1 + distance)
     best_score = min(score for _, score in docs_with_scores)
     best_similarity = 1 / (1 + best_score)
 
@@ -96,11 +110,21 @@ def ask(chain_tuple, question: str) -> dict:
         print(f"  ABSTAINING — score below threshold")
         return {"answer": REFUSAL_MESSAGE, "sources": [], "abstained": True}
 
-    # Layer 2: Relevance check — is the question actually about the course material?
-    docs = [doc for doc, _ in docs_with_scores]
+    # Use MMR retrieval for diverse chunk selection
+    docs = vectorstore.max_marginal_relevance_search(
+        search_query,
+        k=TOP_K,
+        fetch_k=MMR_FETCH_K,
+        lambda_mult=MMR_LAMBDA,
+    )
     context = "\n\n---\n\n".join(doc.page_content for doc in docs)
 
-    relevance_prompt = RELEVANCE_CHECK_PROMPT.format(context=context, question=question)
+    # Layer 2: Relevance check — is the question actually about the course material?
+    chat_history = ""
+    if memory and memory.turn_count > 0:
+        chat_history = memory.get_context_string()
+
+    relevance_prompt = RELEVANCE_CHECK_PROMPT.format(context=context, question=question, chat_history=chat_history)
     relevance_check = llm.invoke(relevance_prompt).strip().upper()
     print(f"  Relevance check: {relevance_check}")
 
@@ -108,12 +132,11 @@ def ask(chain_tuple, question: str) -> dict:
         print(f"  ABSTAINING — question not relevant to course material")
         return {"answer": REFUSAL_MESSAGE, "sources": [], "abstained": True}
 
-    # Layer 3: Build prompt with retrieved context and let LLM answer
-    prompt = TUTOR_PROMPT.format(context=context, question=question)
+    # Layer 3: Build prompt with retrieved context, history, and let LLM answer
+    prompt = TUTOR_PROMPT.format(context=context, question=question, chat_history=chat_history)
     answer = llm.invoke(prompt)
 
-    # Build source citations from MMR results
-    # Match MMR docs back to scored results for relevance %
+    # Build source citations
     score_lookup = {}
     for doc, score in docs_with_scores:
         key = f"{doc.metadata.get('source', '')}_{doc.metadata.get('page', '')}_{doc.page_content[:50]}"
@@ -127,7 +150,6 @@ def ask(chain_tuple, question: str) -> dict:
             continue
         seen.add(source_key)
 
-        # Try to find matching score
         lookup_key = f"{doc.metadata.get('source', '')}_{doc.metadata.get('page', '')}_{doc.page_content[:50]}"
         similarity = score_lookup.get(lookup_key, None)
         relevance = f"{similarity:.0%}" if similarity else "MMR"
