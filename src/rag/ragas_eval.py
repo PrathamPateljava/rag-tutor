@@ -3,14 +3,8 @@ RAGAS Evaluation for RAG Tutor
 ==============================
 Evaluates the full pipeline (retrieval + generation) using RAGAS metrics:
   - Faithfulness: Is the answer grounded in retrieved context?
-  - Answer Relevancy: Does the answer address the question?
   - Context Precision: Are retrieved chunks relevant to the question?
   - Context Recall: Did we retrieve everything needed to answer?
-
-Uses Llama 3 via Ollama as the judge LLM (no API keys needed).
-
-Run: python -m src.ragas_eval
-Requires: pip install ragas datasets openai
 """
 
 import sys

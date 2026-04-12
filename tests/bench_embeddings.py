@@ -3,8 +3,6 @@ Embedding Model Benchmark
 =========================
 Compares retrieval quality of different embedding models
 on the same set of test questions with known expected pages.
-
-Run: python benchmark_embeddings.py
 """
 
 import time

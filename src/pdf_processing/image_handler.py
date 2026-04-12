@@ -4,11 +4,6 @@ Image Extraction, OCR, and Description Module
 1. Extracts embedded images from PDFs → describes with LLaVA
 2. Detects scanned/image-only pages → runs OCR with Tesseract
 3. Returns all results as RAG-ready chunks
-
-Setup:
-  ollama pull llava
-  brew install tesseract
-  pip install pymupdf pillow ollama pytesseract
 """
 
 import fitz  # PyMuPDF

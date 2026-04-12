@@ -1,8 +1,5 @@
 """
 Conversational Memory
-=====================
-Stores chat history for multi-turn Q&A so students
-can ask follow-up questions without repeating context.
 """
 
 from collections import deque
@@ -38,8 +35,6 @@ class ConversationMemory:
     def get_follow_up_query(self, new_question: str) -> str:
         """
         Rewrite a follow-up question to be self-contained using chat history.
-        E.g., "What about L1?" after discussing regularization
-        becomes "What is L1 regularization?"
         """
         if not self.history:
             return new_question

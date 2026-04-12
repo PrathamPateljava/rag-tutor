@@ -2,10 +2,6 @@
 PDF Processing Module
 =====================
 Extracts text and images from PDFs, returns RAG-ready chunks.
-
-Output contract:
-  parse_pdf(filepath) -> list[dict]
-  Each dict: {"text": str, "metadata": {"source": str, "page": int, "type": "text"|"image"}}
 """
 
 import fitz  # PyMuPDF
