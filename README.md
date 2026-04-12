@@ -28,7 +28,8 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
-
+### Note:
+This app cannot be deployed as it requires ollama to be configured on the server. Kindly clone and run it locally with ollama downloaded on your device.
 ### 3. Or use the CLI
 ```bash
 python main.py ingest                # Ingest new PDFs from data/raw_pdfs/
