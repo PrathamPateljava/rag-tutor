@@ -123,7 +123,9 @@ rag-tutor/
 ├── requirements.txt
 └── README.md
 ```
-
+## Reports
+This Repository contains 2 Progress Reports and One Research Report PDFs through which viewers can follow along the
+process and get an official perspective of this project.
 ## Team
 - **Pratham Patel** — RAG pipeline (embedding, retrieval, generation, evaluation, UI)
 - **Prachita Patel** — PDF processing (extraction, cleaning, chunking, image handling, OCR)
